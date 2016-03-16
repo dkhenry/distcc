@@ -50,9 +50,11 @@
  *
  * IP-based access-control system
  */
-
+#ifndef ENABLE_RFC2553
 static const uint32_t allones = 0xffffffffUL;
+#else 
 static const uint8_t allones8 = 0xffU;
+#endif
 
 /**
  * Split a "HOST/BITS" mask specification into HOST and BITS.

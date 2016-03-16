@@ -187,6 +187,7 @@ static int dcc_preforked_child(int listen_fd)
         dcc_service_job(acc_fd, acc_fd,
                            (struct sockaddr *) &cli_addr, cli_len);
 
+        dcc_shutdown(acc_fd);
         dcc_close(acc_fd);
     }
 

@@ -322,6 +322,7 @@ int dcc_pump_sendfile(int ofd, int ifd, size_t n);
 int dcc_r_str_alloc(int fd, unsigned len, char **buf);
 
 int tcp_cork_sock(int fd, int corked);
+int dcc_shutdown(int fd);
 int dcc_close(int fd);
 int dcc_get_io_timeout(void);
 int dcc_want_mmap(void);

@@ -147,6 +147,19 @@ int dcc_select_for_write(int fd, int timeout)
     tv.tv_sec = timeout;
     tv.tv_usec = 0;
 
+#ifdef __linux__
+    // Make sure the socket is open
+    struct tcp_info tcp_info;
+    socklen_t tcp_info_length = sizeof(struct tcp_info);
+    if( ret = getsockopt(fd, SOL_TCP, TCP_INFO, (void *)&tcp_info, &tcp_info_length )) {
+        rs_log_error("fetching tcp_info failed: %s",strerror(errno));
+        return EXIT_IO_ERROR;
+    }
+    if(tcp_info.tcpi_state == CLOSE_WAIT || tcp_info.tcpi_state == TCP_CLOSE) {
+        return EXIT_IO_ERROR;
+    }
+#endif
+    
     while (1) {
         FD_ZERO(&write_fds);
         FD_ZERO(&except_fds);
@@ -280,7 +293,13 @@ int tcp_cork_sock(int POSSIBLY_UNUSED(fd), int POSSIBLY_UNUSED(corked))
     return 0;
 }
 
-
+int dcc_shutdown(int fd) {
+    if(shutdown(fd,SHUT_RDWR) != 0) {
+        rs_log_error("failed to shutdown fd%d: %s",fd, strerror(errno));
+        return EXIT_IO_ERROR;
+    }
+    return 0;
+}
 
 int dcc_close(int fd)
 {
