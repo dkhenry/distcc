@@ -1,4 +1,4 @@
-/* -*- c-file-style: "java"; indent-tabs-mode: nil; tab-width: 4; fill-column: 78 -*-
+* -*- c-file-style: "java"; indent-tabs-mode: nil; tab-width: 4; fill-column: 78 -*-
  *
  * distcc -- A simple distributed compiler system
  *
@@ -90,8 +90,12 @@ int dcc_get_io_timeout(void)
  * @todo Perhaps only apply the timeout for initial connections, not when
  * doing regular IO.
  **/
-int dcc_select_for_read(int fd,
-                        int timeout)
+int dcc_select_for_read(int fd,int timeout) {
+    int retry=0;
+    return dcc_select_for_read_retry(fd,timeout,&retry)
+}
+
+int dcc_select_for_read(int fd,int timeout, int *retry)
 {
     fd_set fds;
     int rs;
@@ -120,7 +124,12 @@ int dcc_select_for_read(int fd,
             return EXIT_IO_ERROR;
         } else if (rs == 0) {
             rs_log_error("IO timeout");
-            return EXIT_IO_ERROR;
+            if ( retry && *retry > 0 ) {
+                *retry--;
+                return 0;
+            } else {
+                return EXIT_IO_ERROR;
+            }
         } else if (!FD_ISSET(fd, &fds)) {
             rs_log_error("how did fd not get set?");
             continue;
@@ -136,7 +145,12 @@ int dcc_select_for_read(int fd,
  * Calls select() to block until the specified fd becomes writeable
  * or has an error condition, or the timeout expires.
  */
-int dcc_select_for_write(int fd, int timeout)
+int dcc_select_for_write(int fd, int timeout) {
+    int retry = 0;
+    return dcc_select_for_write_retry(fd,timeout,&retry);
+}
+
+int dcc_select_for_write_retry(int fd, int timeout, int *retry)
 {
     fd_set write_fds;
     fd_set except_fds;
@@ -178,7 +192,12 @@ int dcc_select_for_write(int fd, int timeout)
             return EXIT_IO_ERROR;
         } else if (rs == 0) {
             rs_log_error("IO timeout");
-            return EXIT_IO_ERROR;
+            if( retry && *retry > 0 ) {
+                *retry--;
+                return 0;
+            } else {
+                return EXIT_IO_FAILURE;
+            }
         } else {
             if (FD_ISSET(fd, &except_fds)) {
               rs_trace("error condition on fd%d", fd);
@@ -206,12 +225,13 @@ int dcc_readx(int fd, void *buf, size_t len)
 {
     ssize_t r;
     int ret;
+    int retry = MAX_RETRYS;
 
     while (len > 0) {
         r = read(fd, buf, len);
 
         if (r == -1 && errno == EAGAIN) {
-            if ((ret = dcc_select_for_read(fd, dcc_get_io_timeout())))
+            if ((ret = dcc_select_for_read(fd, dcc_get_io_timeout()/MAX_RETRYS,&retry)))
                 return ret;
             else
                 continue;
@@ -233,6 +253,7 @@ int dcc_readx(int fd, void *buf, size_t len)
 }
 
 
+#define MAX_RETRYS 10
 /**
  * Write bytes to an fd.  Keep writing until we're all done or something goes
  * wrong.
@@ -243,12 +264,13 @@ int dcc_writex(int fd, const void *buf, size_t len)
 {
     ssize_t r;
     int ret;
+    int retry = MAX_RETRYS;
 
     while (len > 0) {
         r = write(fd, buf, len);
 
         if (r == -1 && errno == EAGAIN) {
-            if ((ret = dcc_select_for_write(fd, dcc_get_io_timeout())))
+            if ((ret = dcc_select_for_write_retry(fd, dcc_get_io_timeout()/MAX_RETRYS ,&retry) ))
                 return ret;
             else
                 continue;

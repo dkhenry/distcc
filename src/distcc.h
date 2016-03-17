@@ -329,7 +329,10 @@ int dcc_want_mmap(void);
 
 
 int dcc_select_for_write(int fd, int timeout);
+int dcc_select_for_write_retry(int fd, int timeout, int *retry);
+
 int dcc_select_for_read(int fd, int timeout);
+int dcc_select_for_read_retry(int fd, int timeout, int *retry);
 
 /* loadfile.c */
 int dcc_load_file_string(const char *filename,
