@@ -156,7 +156,7 @@ int dcc_select_for_write(int fd, int timeout)
         rs_log_error("fetching tcp_info failed: %s",strerror(errno));
         return EXIT_IO_ERROR;
     }
-    if(tcp_info.tcpi_state == CLOSE_WAIT || tcp_info.tcpi_state == TCP_CLOSE) {
+    if(tcp_info.tcpi_state == TCP_CLOSE_WAIT || tcp_info.tcpi_state == TCP_CLOSE) {
         return EXIT_IO_ERROR;
     }
 #endif
