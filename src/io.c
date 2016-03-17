@@ -151,6 +151,7 @@ int dcc_select_for_write(int fd, int timeout)
     // Make sure the socket is open
     struct tcp_info tcp_info;
     socklen_t tcp_info_length = sizeof(struct tcp_info);
+    int ret; 
     if( ret = getsockopt(fd, SOL_TCP, TCP_INFO, (void *)&tcp_info, &tcp_info_length )) {
         rs_log_error("fetching tcp_info failed: %s",strerror(errno));
         return EXIT_IO_ERROR;
